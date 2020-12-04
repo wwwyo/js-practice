@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #wrapper {
+      width: 400px;
+      height: 400px;
+      border: medium solid black;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <canvas id="canvas">
+
+    </canvas>
+  </div>
+  <script>
+    const WIDTH = 400;
+    const HEIGHT = 400;
+    const canvas = document.getElementById("canvas");
+    
+    class View {
+      constructor(width, height, canvas, ball){
+        this.width = width;
+        this.height = height;
+        this.canvas = canvas;
+        this.canvas.height = height;
+        this.canvas.width = width;
+        this.ctx = this.canvas.getContext('2d');
+        this.ctx.rect(0, 0, this.width, this.height);
+        
+        this.ball = ball;
+      }
+
+      update(model) {
+
+        this.ctx.beginPath();
+        this.ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, 2 * Math.PI);
+        this.ctx.stroke();
+        this.ctx.fill();
+      };
+      
+    };
+
+    class Ball {
+      constructor(){
+        this.x = 1;
+        this.y = 1;
+        this.vx = 1;
+        this.vy = 1;
+        this.r = 10
+      };
+
+      next(){
+        this.x += vx;
+        this.y += vy;
+      }
+    }
+
+    class BlockBreaking {
+      constructor(canvas){
+        this.canvas = canvas;
+        this.ball = new Ball();
+      };
+
+      start(){
+        this.ctx.beginPath();
+      };
+
+      next(){
+        this.ball.next();
+      }
+    };
+
+    // コントローラー
+    class Flame {
+      constructor(width, height, canvas){
+        this.width = width;
+        this.height = height;
+        this.canvas = canvas
+        this.callback = null;
+        this.intervalId = null;
+        this.view = new View(this.width, this.height, this.canvas );
+        this.blockBreaking = new BlockBreaking(canvas);
+      };
+
+      next(){
+        if (this.callBack !==null) { return }
+        callBack = () => {
+          this.view.update(model);
+        }
+      };
+
+      start(){
+        intervalId = setInterval(() => {callBack()},
+        10);
+      };
+    };
+
+    const flame = new Flame(WIDTH,HEIGHT, canvas);
+    // flame.start();
+  </script>
+</body>
+</html>

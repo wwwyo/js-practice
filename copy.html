@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #wrapper {
+      width: 400px;
+      height: 400px;
+      border: medium solid black;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <canvas id="canvas">
+
+    </canvas>
+  </div>
+  <script>
+
+    const WIDTH = 400;
+    const HEIGHT = 400;
+
+    class View {
+      constructor(canvas, width, height) {
+        this.canvas = canvas;
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.ctx = this.canvas.getContext('2d');
+        this.width = width;
+        this.height = height;
+      }
+      update(model) {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        this.ctx.beginPath();
+        this.ctx.arc(model.ball.x, model.ball.y, model.ball.r, 0, 2 * Math.PI);
+        this.ctx.stroke();
+        this.ctx.fill();
+      }
+    }
+
+    class Paddle {
+
+      constructor(x, y){
+        this.x = x;
+        this.y = y;
+        this.width = 80;
+        this.height = 10;
+      };
+
+
+      left() {
+        return x - (this.width/ 2); 
+      };
+
+      up() {
+        return y - (this.height/ 2);
+      }
+    };
+
+    class Ball {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 1;
+        this.vy = 0.5;
+        this.r = 10;
+      }
+
+      next() {
+        this.x += this.vx;
+        this.y += this.vy;
+      }
+
+      left() {
+        return this.x - this.r;
+      }
+
+      right() {
+        return this.x + this.r;
+      }
+
+      top() {
+        return this.y - this.r;
+      }
+
+      bottom() {
+        return this.y + this.r;
+      }
+
+      reflectY() {
+        return this.vy *= -1
+      };
+
+      reflectX() {
+        return this.vx *= -1
+      };
+    }
+
+    // モデル 物理演算
+    class BlockBreaking {
+
+      constructor(width, height){
+        this.width = width;
+        this.height = height;
+
+        const initX = 100;
+        const initY  = 200;
+        this.ball = new Ball(initX, initY);
+      }
+
+      next() {
+        if (this.ball.top() < 0 || this.ball.bottom() > this.height) {
+          this.ball.reflectY();
+        }
+        if (this.ball.left() < 0 || this.ball.right() > this.width) {
+          this.ball.reflectX();
+        }
+        this.ball.next();
+      }
+    }
+
+    // コントローラー
+    class Frame {
+
+      constructor(width, height, canvas) {
+        this.width = 400;
+        this.height = 400;
+        this.intervalId = null;
+        this.callBack = null;
+        this.view = new View(canvas, this.width, this.height);
+        this.model = new BlockBreaking(this.width, this.height);
+      }
+
+      start() {
+        this.callBack = () => this.next();
+        this.intervalId = setInterval(this.callBack, 10)
+      }
+      next() {
+        this.model.next();
+        this.view.update(this.model);
+      }
+
+      stop() {
+
+      }
+    };
+
+
+    const canvas = document.getElementById("canvas");
+    const flame = new Frame(WIDTH, HEIGHT, canvas);
+    flame.start();
+  </script>
+</body>
+</html>
+
+function unfollow() {
+  console.log("フォローを外しました");
+}
+
+function cancelTweet() {
+  console.log("ツイートをキャンセルしました");
+}
+
+function confirm(fn) {
+  if (window.confirm("実行しますか")){
+    fn();
+  }
+}
+
+confirm(unfllow);

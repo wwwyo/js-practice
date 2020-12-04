@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #characters {
+      font-size: 2rem;
+    }
+    #typed {
+      color: red
+    }
+  </style>
+</head>
+<body>
+  <div id="time">00:00:10.000</div>
+  <div id="characters">
+    <span id="typed"></span><span id="untyped">HelloWorld</span>
+  </div>
+  <div>
+    <input id="start" type="button" value="start">
+    <input id="reset" type="button" value="reset">
+  </div>
+  <div id="result"></div>
+  <script>
+    const timeElement = document.getElementById("time")
+    const start = document.getElementById("start");
+    const reset = document.getElementById("reset");
+    const result = document.getElementById("result")
+
+    const time = 10000;
+    let remaining = time;
+
+    let intervalId = null;
+
+    const typedField = document.getElementById('typed');
+    const untypedField = document.getElementById('untyped');
+    let typed = "";
+    let untyped = "";
+
+    let missTypedCount = 0;
+    let successTypedCount = 0;
+
+    const words = [
+      'HelloWorld',
+      'Google',
+      'Windows',
+      'Apple',
+      'Facebook',
+      'RubyOnRails',
+      'Progate',
+      'MacBookAie'      
+    ]
+
+    function updateTime() {
+      const ms = remaining % 1000;
+      const s = Math.floor(remaining / 1000) % 60;
+      const m = Math.floor(remaining / (1000*60)) % 60;
+      const h = Math.floor(remaining / (1000*60*60));
+
+      const msStr = ms.toString().padStart(3, '0');
+      const sStr = s.toString().padStart(2, '0');
+      const mStr = m.toString().padStart(2, '0');
+      const hStr = h.toString().padStart(2, '0');
+
+      timeElement.innerHTML = `${hStr}:${mStr}:${sStr}:${msStr}`
+    }
+
+    function keyDownCallBack(e) {
+      if (e.key !== untyped.substring(0, 1)) {
+        missTypedCount += 1;
+        return;
+      }
+      successTypedCount += 1;
+      typed += untyped.substring(0, 1);
+      untyped = untyped.substring(1);
+
+      updateTextField();
+
+      if (untyped === "") {
+        setContent();
+      }
+    };
+
+    function gameStart() {
+      let pre = new Date();
+      intervalId = setInterval(() => {
+        const now = new Date();
+        remaining -= now - pre;
+        pre = now;
+        if (remaining < 0 ) {return finish();}
+        updateTime();
+      }, 10);
+      window.addEventListener('keydown',keyDownCallBack);
+
+    }
+
+    function finish() {
+      remaining = 0;
+      clearInterval(intervalId);
+      intervalId = null;
+      updateTime();
+      window.removeEventListener("keydown", keyDownCallBack);
+      result.textContent = `ミスタイプ数: ${missTypedCount},成功タイプ数:${successTypedCount}, リセットボタンを押してね `;
+    };
+
+
+    function randomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    }
+
+    function nextStr() {
+      const idx = randomInt(words.length);
+      return words[idx];
+    }
+
+    function updateTextField() {
+      typedField.textContent = typed;
+      untypedField.textContent = untyped;
+    };
+
+    function setContent(){
+      typed = ""
+      untyped = nextStr();
+      updateTextField();
+    };
+
+    start.addEventListener('click', (e)=> {
+      if (intervalId !==null ) {return}
+      gameStart();
+    });
+
+    reset.addEventListener('click', (e) => {
+      document.removeEventListener('keydown', keyDownCallBack);
+      clearInterval(intervalId);
+      missTypedCount = 0;
+      successTypedCount = 0;
+      result.textContent = "";
+      remaining = time;
+      intervalId = null;
+      updateTime();
+      setContent();
+    });
+
+    setContent();
+  </script>
+</body>
+</html>
