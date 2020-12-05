@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>copy</title>
   <style>
     #wrapper {
       width: 400px;
@@ -39,6 +39,56 @@
         this.ctx.arc(model.ball.x, model.ball.y, model.ball.r, 0, 2 * Math.PI);
         this.ctx.stroke();
         this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.rect(model.paddle.left(), model.paddle.up(), model.paddle.width, model.paddle.height);
+        this.ctx.stroke();
+        this.ctx.fill();
+
+        model.blocks.forEach(b => {
+          if(b.hidden) {return}
+          this.ctx.beginPath();
+          this.ctx.rect(b.left(), b.up(), b.width, b.height);
+          this.ctx.stroke();
+          this.ctx.fill();
+        })
+
+      }
+    }
+
+    class Block {
+      constructor(x, y){
+        this.width = 98;
+        this.height = 18;
+        this.x = x;
+        this.y = y;
+        this.hidden = false;
+      }
+
+      left() {
+        return this.x 
+      }
+      right() {
+        return this.x + (this.width);
+      }
+      up() {
+        return this.y 
+      }
+      down() {
+        return this.y + (this.height);
+      }
+      judge(ball){
+      if(Math.abs(this.up()- ball.y) < ball.r || Math.abs(this.down() - ball.y) < ball.r) {
+        if (this.left() < (ball.x + ball.r) && this.right() > (ball.x - ball.r)) {
+          this.hidden =  true;
+
+          if(ball.x > this.left() && ball.x < this.right() ){
+            ball.reflectY();
+          }else{
+            ball.reflectX();
+          }
+          }
+        }
       }
     }
 
@@ -47,17 +97,37 @@
       constructor(x, y){
         this.x = x;
         this.y = y;
-        this.width = 80;
+        this.width = 98;
         this.height = 10;
       };
 
-
       left() {
-        return x - (this.width/ 2); 
+        return this.x - (this.width/ 2); 
       };
 
+      right() {
+        return this.x + (this.width/2);
+      }
       up() {
-        return y - (this.height/ 2);
+        return this.y - (this.height/ 2);
+      }
+      down() {
+        return this.y + (this.height/ 2);
+      }
+
+      moveLeft(){
+        this.x -= 10;
+      }
+      moveRight() {
+        this.x += 10;
+      }
+
+      isCollided(ball) {
+        if(Math.abs(this.up()- ball.y) < ball.r || Math.abs(this.down() - ball.y) < ball.r) {
+          if (ball.x < this.right() && ball.x > this.left()) {
+            return true;
+          }
+        }
       }
     };
 
@@ -110,16 +180,50 @@
         const initX = 100;
         const initY  = 200;
         this.ball = new Ball(initX, initY);
+        this.paddle = new Paddle(200, 300);
+
+        this.blocks = [];
+        for(let i = 0; i < 4; i++ ){
+          for (let j=0; j< 3; j++){
+            this.blocks.push(new Block((j + 1) * 100, (i + 4) * 20))
+          }
+        }
+        this.gameOver = false;
       }
 
       next() {
+        if (this.ball.bottom() > this.height) {
+          this.gameOver = true;
+        }
+
         if (this.ball.top() < 0 || this.ball.bottom() > this.height) {
           this.ball.reflectY();
         }
         if (this.ball.left() < 0 || this.ball.right() > this.width) {
           this.ball.reflectX();
         }
+        if (this.paddle.isCollided(this.ball)) {
+          this.ball.reflectY();
+        }
+
+        this.blocks.forEach(b =>{
+          if (b.hidden){return}
+          b.judge(this.ball);
+        })
+
+        if (this.blocks.every(b => b.hidden)) {this.gameOver = true;}
         this.ball.next();
+      }
+
+      
+
+      moveLeft(){
+        if( this.paddle.left() < 0 ) {return}
+        this.paddle.moveLeft();
+      }
+      moveRight() {
+        if( this.paddle.right() > 400 ) {return}
+        this.paddle.moveRight();
       }
     }
 
@@ -130,45 +234,46 @@
         this.width = 400;
         this.height = 400;
         this.intervalId = null;
-        this.callBack = null;
+        this.keyEventListener = null;
         this.view = new View(canvas, this.width, this.height);
         this.model = new BlockBreaking(this.width, this.height);
+        this.window = window
       }
 
       start() {
-        this.callBack = () => this.next();
-        this.intervalId = setInterval(this.callBack, 10)
-      }
+        this.intervalId = setInterval(() => this.next(), 10);
+        this.keyEventListener = (e) => this.handleKeyEvent(e);
+        this.window.addEventListener("keydown",this.keyEventListener)
+      };
+
+
+      handleKeyEvent(e) {
+        if (e.key === "ArrowRight"){
+          this.model.moveRight()
+        }
+        if (e.key === "ArrowLeft"){
+          this.model.moveLeft()
+        }
+      };
+
       next() {
         this.model.next();
         this.view.update(this.model);
+        if (this.model.gameOver) {
+          this.stop();
+        }
       }
 
       stop() {
-
+        clearInterval(this.intervalId);
+        this.window.removeEventListener("keydown", this.keyEventListener)
       }
     };
 
 
     const canvas = document.getElementById("canvas");
-    const flame = new Frame(WIDTH, HEIGHT, canvas);
-    flame.start();
+    const frame = new Frame(WIDTH, HEIGHT, canvas, window);
+    frame.start();
   </script>
 </body>
 </html>
-
-function unfollow() {
-  console.log("フォローを外しました");
-}
-
-function cancelTweet() {
-  console.log("ツイートをキャンセルしました");
-}
-
-function confirm(fn) {
-  if (window.confirm("実行しますか")){
-    fn();
-  }
-}
-
-confirm(unfllow);
