@@ -37,72 +37,245 @@
       }
 
       update(model) {
+        this.ctx.clearRect(0, 0, this.width, this.height);
 
         this.ctx.beginPath();
-        this.ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, 2 * Math.PI);
+        this.ctx.arc(model.ball.x, model.ball.y, model.ball.r, 0, 2 * Math.PI);
         this.ctx.stroke();
         this.ctx.fill();
-      };
+
+        this.ctx.beginPath();
+        this.ctx.rect(model.paddle.x, model.paddle.y, model.paddle.width, model.paddle.height);
+        this.ctx.stroke();
+        this.ctx.fill();
+
+        model.blocks.forEach((b)=> {
+          if (b.hidden){return}
+          this.ctx.beginPath();
+          this.ctx.rect(b.x, b.y, b.width, b.height);
+          this.ctx.stroke();
+          this.ctx.fill();
+        });
+      }
       
     };
 
+    class Block {
+      constructor(x, y){
+        this.x = x;
+        this.y = y;
+        this.width = 98
+        this.height = 19
+        this.hidden = false;
+      }
+
+      left(){
+        return this.x 
+      };
+
+      right(){
+        return this.x + this.width
+      };
+
+      up(){
+        return this.y 
+      }
+      bottom(){
+        return this.y + this.height
+      }
+
+      judge(ball){
+      if((ball.up() - this.up()) < ball.r || ball.under() - this.bottom() < ball.r){
+          if (this.left() - ball.left() < ball.r && ball.right() - this.right() < ball.r ){
+            this.hidden = true
+            if(ball.x < this.left() || ball.x > this.right()){
+              ball.reflectX();
+            }else if( ball.y < this.up() || ball.y > this.bottom()){
+              ball.reflectY();
+            }
+          }
+        }
+      }
+
+    }
+
     class Ball {
       constructor(){
-        this.x = 1;
-        this.y = 1;
+        this.x = 50;
+        this.y = 50;
         this.vx = 1;
-        this.vy = 1;
+        this.vy = 0.5;
         this.r = 10
       };
 
       next(){
-        this.x += vx;
-        this.y += vy;
+        this.x += this.vx;
+        this.y += this.vy;
+      }
+
+      up(){
+        return this.y - this.r
+      }
+
+      under(){
+        return this.y + this.r
+      }
+
+      left(){
+        return this.x - this.r
+      }
+
+      right(){
+        return this.x + this.r
+      }
+
+      reflectX() {
+        this.vx *= -1
+      };
+
+      reflectY() {
+        this.vy *= -1
+      };
+    }
+
+    class Paddle {
+      constructor(){
+        this.x = 100
+        this.y = 300
+        this.width = 100;
+        this.height = 10;
+      }
+
+      left(){
+        return this.x 
+      };
+
+      right(){
+        return this.x + this.width
+      };
+
+      up(){
+        return this.y 
+      }
+      bottom(){
+        return this.y + this.height
+      }
+
+      moveLeft(){
+        this.x -= 10;
+      };
+
+      moveRight(){
+        this.x += 10;
+      };
+
+      isCollided(ball){
+        if(this.left() - ball.x < ball.r && ball.r < this.right() - ball.x && this.up() - ball.y < ball.r && ball.r > ball.y - this.bottom() ){
+          return true
+        }
       }
     }
 
     class BlockBreaking {
-      constructor(canvas){
+      constructor(canvas, width, height){
         this.canvas = canvas;
         this.ball = new Ball();
-      };
-
-      start(){
-        this.ctx.beginPath();
+        this.left = 0
+        this.right = width
+        this.up = 0
+        this.under = height
+        this.paddle = new Paddle();
+        this.gameOver = false;
+        this.blocks = []
+        for(let i = 0; i < 4; i++) {
+          for (let j = 0; j < 3; j ++){
+            this.blocks.push(new Block((j + 1)* 100, (i+1)* 20));
+          }
+        } 
       };
 
       next(){
+        if (this.ball.under() >= this.under) {
+          return this.gameOver = true
+        }
+        if (this.ball.left() < this.left || this.ball.right() > this.right){
+          this.ball.reflectX();
+        }
+        if (this.ball.up() < this.up || this.ball.under() > this.under){
+          this.ball.reflectY();
+        }
+        if (this.paddle.isCollided(this.ball)){
+          this.ball.reflectY();
+        }
+
+        this.blocks.forEach((b)=> {
+          if (b.hidden) {return}
+          b.judge(this.ball);
+        })
+
+        if (this.blocks.every(b => b.hidden)) {return this.gameOver = true;}
+
         this.ball.next();
       }
-    };
+
+      moveRight(){
+        if (this.paddle.right() > this.right) {return}
+        this.paddle.moveRight();
+      }
+
+      moveLeft(){
+        if (this.paddle.left() < 0) {return}
+        this.paddle.moveLeft();
+      }
+
+    }
 
     // コントローラー
-    class Flame {
+    class Frame {
       constructor(width, height, canvas){
         this.width = width;
         this.height = height;
         this.canvas = canvas
-        this.callback = null;
         this.intervalId = null;
+        this.keyDownEvent = null;
+        this.window = window;
         this.view = new View(this.width, this.height, this.canvas );
-        this.blockBreaking = new BlockBreaking(canvas);
-      };
-
-      next(){
-        if (this.callBack !==null) { return }
-        callBack = () => {
-          this.view.update(model);
-        }
+        this.model = new BlockBreaking(canvas, this.width, this.height);
       };
 
       start(){
-        intervalId = setInterval(() => {callBack()},
-        10);
+        this.intervalId = setInterval(() =>this.next(),10);
+        this.keyDownEvent = (e) => this.handleKeyDown(e);
+        this.window.addEventListener("keydown", this.keyDownEvent);
       };
+
+      handleKeyDown(e){
+        if (e.key == "ArrowRight"){
+          this.model.moveRight();
+        }
+        if (e.key == "ArrowLeft"){
+          this.model.moveLeft();
+        }
+      }
+
+      next(){
+        this.model.next();
+        this.view.update(this.model);
+        if (this.model.gameOver){
+          stop();
+        }
+      };
+
+      stop(){
+        clearInterval.this.intervalId;
+        window.removeEventListener("keydown", this.keyDownEvent);
+      }
+
+      
     };
 
-    const flame = new Flame(WIDTH,HEIGHT, canvas);
-    // flame.start();
+    const frame = new Frame(WIDTH,HEIGHT, canvas);
+    frame.start();
   </script>
 </body>
 </html>

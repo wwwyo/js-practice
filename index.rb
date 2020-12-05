@@ -34,3 +34,14 @@ puts "検索したい数字を入力してください"
 num = gets.to_i
 order = search_order(num, array)
 describe(num, order)
+
+
+a = gets.to_i
+b = gets.to_i
+
+multiply = a * b
+if multiply.even?
+  puts "Even"
+elsif multiply.odd?
+  puts "Odd"
+end
